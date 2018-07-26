@@ -9,6 +9,7 @@ def processline(line):
     line = line.strip().lower()
     line=line.translate(translator)
     line = re.sub('“|”', ' ', line)
+    line = re.sub(' +', ' ', line)
 
     spaceline = line
     line = re.sub(' ', '', line)
