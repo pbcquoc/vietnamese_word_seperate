@@ -1,6 +1,8 @@
 from multiprocessing import Pool
 import re
 import string
+import sys
+
 translator=str.maketrans('','',string.punctuation)
 
 def processline(line):
@@ -13,9 +15,14 @@ def processline(line):
     return line +','+ spaceline
 
 if __name__ == '__main__':
-    fin = open('data/VNESEcorpus.txt')
+    fin = sys.argv[1]
+    fout = sys.argv[2]
+
+    fin = open(fin)
     lines = fin.readlines()
+
     p = Pool(5)
     lines = p.map(processline, lines)
-    fout = open('data/corpus', 'w')
+
+    fout = open(fout, 'w')
     fout.write('\n'.join(lines))
