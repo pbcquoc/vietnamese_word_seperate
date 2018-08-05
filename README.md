@@ -6,6 +6,7 @@ LSTM là một loại mô hình thuộc kiến trúc RNN, mô hình này có th�
 ## Tiền xử lý
 Dữ liệu thu thập được trên các báo mạng gần như chuẩn, do đó, tôi chỉ remove các dấu câu. Toàn bộ câu chữ được giữ nguyên.
 ## Mô hình
+![model](pics/word_seperate_lstm.png)
 
 ## Train
 ## Kết quả
