@@ -10,6 +10,7 @@ MAX_CHARS = 200
 MAX_WORDS = 50
 EMBED_DIM = 56
 LATENT_DIM = 128
+OUTPUT_DIM = 56
 
 def tokenize(X, y):
     char_tokenizer = Tokenizer(num_words=CHAR_VOCAB, char_level=True)
@@ -28,8 +29,12 @@ def model():
     encoder_inputs = Input(shape=(None, MAX_CHARS))
     embed = Embedding(CHAR_VOCAB, EMBED_DIM)
 
-    encoder = LSTM(MAX_CHARS, return_state=True)
-
+    encoder = LSTM(OUTPUT_DIM, return_state=True)
+    encoder_outputs, state_h, state_c = encoder(encoder_inputs)
+    encoder_states = [state_h, state_c]
+    # define training decoder
+    decoder_inputs = Input(shape=(None, n_output))
+     
 df = pd.read_csv('../data/word_seperate/corpus', header=None)   
 X, y = df[0].values, df[1].values
 
