@@ -70,21 +70,21 @@ df = pd.read_csv('../data/word_seperate/corpus', header=None)
 X, y = df[0].values, df[1].values
 
 X1, X2, y = tokenize(X, y)
-print(X1.shape, X2.shape, y.shape)
 
 train, infdec, infenc = model()
-train.summary()
+print(train.summary())
 
 train.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc'])
 
-batch_size = 32
+batch_size = 256
 for batch in range(int(len(y)/batch_size)):
-    X1_batch = X1[batch_size*batch:(batch_size+1)*batch, :]
-    X2_batch = X2[batch_size*batch:(batch_size+1)*batch, :]
-    y_batch = y[batch_size*batch:(batch_size+1)*batch, :]
+    X1_batch = X1[batch_size*batch:batch_size*(batch+1), :]
+    X2_batch = X2[batch_size*batch:batch_size*(batch+1), :]
+    y_batch = y[batch_size*batch:batch_size*(batch+1), :]
 
     y_batch = to_categorical(y_batch.flatten(), num_classes=WORD_VOCAB)
     y_batch = y_batch.reshape((-1, MAX_WORDS, WORD_VOCAB))
+    
     xent, acc = train.train_on_batch([X1_batch, X2_batch], y_batch)
     print(xent, acc)
     
