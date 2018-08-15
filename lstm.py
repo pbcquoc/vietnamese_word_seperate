@@ -21,12 +21,12 @@ def tokenize(X, y):
     char_tokenizer = Tokenizer(num_words=CHAR_VOCAB, char_level=True)
     char_tokenizer.fit_on_texts(X)
     X = char_tokenizer.texts_to_sequences(X)
-    X1 = pad_sequences(X,  maxlen=MAX_CHARS)
-
+    X1 = pad_sequences(X,  maxlen=MAX_CHARS, truncating='post')
+    
     word_tokenizer = Tokenizer(num_words=WORD_VOCAB)
     word_tokenizer.fit_on_texts(y)
-    y = char_tokenizer.texts_to_sequences(y)
-    y = pad_sequences(y,  maxlen=MAX_WORDS)
+    y = word_tokenizer.texts_to_sequences(y)
+    y = pad_sequences(y,  maxlen=MAX_WORDS, padding='post', truncating='post')
     
     X2 = np.pad(y, ((0,0),(1,0)), mode='constant')[:,:-1]
 
@@ -72,18 +72,18 @@ X, y = df[0].values, df[1].values
 X1, X2, y = tokenize(X, y)
 
 train, infdec, infenc = model()
-print(train.summary())
+train.summary()
 
 train.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc'])
 
 batch_size = 256 
-epoches = 5
+epoches = 2000
 for epoch in range(epoches):
-    for batch in range(int(len(y)/batch_size)):
+    for batch in range(int(len(y)/batch_size)+1):
         X1_batch = X1[batch_size*batch:batch_size*(batch+1), :]
         X2_batch = X2[batch_size*batch:batch_size*(batch+1), :]
         y_batch = y[batch_size*batch:batch_size*(batch+1), :]
-
+        
         y_batch = to_categorical(y_batch.flatten(), num_classes=WORD_VOCAB)
         y_batch = y_batch.reshape((-1, MAX_WORDS, WORD_VOCAB))
         
