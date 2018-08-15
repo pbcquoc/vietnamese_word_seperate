@@ -7,11 +7,13 @@ LSTM là một loại mô hình thuộc kiến trúc RNN, mô hình này có th�
 Dữ liệu thu thập được trên các báo mạng gần như chuẩn, do đó, tôi chỉ remove các dấu câu. Toàn bộ câu chữ được giữ nguyên.
 Dữ liệu huấn luyện được thể hiện dưới bảng sau:
 
+<center>
 Input | Output
 --- | --- 
 riêngởxứlạnhkhôngbaogiờcóve | riêng ở xứ lạnh không bao giờ có ve
 trẻemtheongườilớnvuiđóntết | trẻ em theo người lớn vui đón tết
 bệnhnhânphảinằmđiềutrịcáchly | bệnh nhân phải nằm điều trị cách ly
+</center>
 
 ## Mô hình
 ![model](pics/word_seperate_lstm.png)
