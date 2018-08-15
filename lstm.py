@@ -76,7 +76,7 @@ print(train.summary())
 
 train.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc'])
 
-batch_size =  256 
+batch_size = 256 
 epoches = 5
 for epoch in range(epoches):
     for batch in range(int(len(y)/batch_size)):
