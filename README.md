@@ -5,6 +5,10 @@ LSTM là một loại mô hình thuộc kiến trúc RNN, mô hình này có th�
 Để kiểm tra khả năng tách các từ dính liền với nhau của mạng LSTM, tôi sử dụng bộ dữ liệu thu thập từ các trang báo mạng như Vnexpess, Vietnamnet, ... Sau đó, xóa tất cả các khoảng trắng, để nối các từ lại. Dữ liệu này dùng để mô hình học. Dữ liệu dùng để mình họa quá trình học cũng như các đặc trưng học được của LSTM. 
 ## Tiền xử lý
 Dữ liệu thu thập được trên các báo mạng gần như chuẩn, do đó, tôi chỉ remove các dấu câu. Toàn bộ câu chữ được giữ nguyên.
+Markdown | Less | Pretty
+--- | --- | ---
+*Still* | `renders` | **nicely**
+1 | 2 | 3
 ## Mô hình
 ![model](pics/word_seperate_lstm.png)
 ## Dependences
