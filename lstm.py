@@ -76,15 +76,18 @@ print(train.summary())
 
 train.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc'])
 
-batch_size = 256
-for batch in range(int(len(y)/batch_size)):
-    X1_batch = X1[batch_size*batch:batch_size*(batch+1), :]
-    X2_batch = X2[batch_size*batch:batch_size*(batch+1), :]
-    y_batch = y[batch_size*batch:batch_size*(batch+1), :]
+batch_size =  256 
+epoches = 5
+for epoch in range(epoches):
+    for batch in range(int(len(y)/batch_size)):
+        X1_batch = X1[batch_size*batch:batch_size*(batch+1), :]
+        X2_batch = X2[batch_size*batch:batch_size*(batch+1), :]
+        y_batch = y[batch_size*batch:batch_size*(batch+1), :]
 
-    y_batch = to_categorical(y_batch.flatten(), num_classes=WORD_VOCAB)
-    y_batch = y_batch.reshape((-1, MAX_WORDS, WORD_VOCAB))
-    
-    xent, acc = train.train_on_batch([X1_batch, X2_batch], y_batch)
-    print(xent, acc)
+        y_batch = to_categorical(y_batch.flatten(), num_classes=WORD_VOCAB)
+        y_batch = y_batch.reshape((-1, MAX_WORDS, WORD_VOCAB))
+        
+        xent, acc = train.train_on_batch([X1_batch, X2_batch], y_batch)
+        if (batch % 20) == 0:
+            print(epoch, batch, xent, acc)
     
