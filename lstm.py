@@ -8,6 +8,7 @@ from keras.layers import LSTM
 from keras.layers import Dense, Embedding
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 CHAR_VOCAB = 103
 WORD_VOCAB = 5000
@@ -38,7 +39,7 @@ def tokenize(X, y):
 def model():
     # embed encoder
     encoder_inputs = Input(shape=(MAX_CHARS,))
-    embed_encoder = Embedding(CHAR_VOCAB, EMBED_DIM, input_length=MAX_CHARS)
+    embed_encoder = Embedding(CHAR_VOCAB, EMBED_DIM)
     embed_encoder_inputs = embed_encoder(encoder_inputs)
     
     encoder = LSTM(OUTPUT_DIM, return_state=True)
@@ -46,7 +47,7 @@ def model():
     encoder_states = [state_h, state_c]
     # define training decoder
     decoder_inputs = Input(shape=(MAX_WORDS, ))
-    embed_decoder = Embedding(WORD_VOCAB, EMBED_DIM, input_length=MAX_WORDS)
+    embed_decoder = Embedding(WORD_VOCAB, EMBED_DIM)
     embed_decoder_inputs = embed_decoder(decoder_inputs)
     
     decoder_lstm = LSTM(OUTPUT_DIM, return_sequences=True, return_state=True)
@@ -73,13 +74,27 @@ def index_str(indices, vocab, delimiter=''):
     strchar = delimiter.join([vocab[idx] for idx in indices if idx != 0])
     return strchar
 
+def predict(infenc, infdec, source, n_steps, card):
+    #encode
+    state = infenc.predict(source)
+    target_seq = np.zeros(shape=(card, MAX_WORDS))
+    output = []
+    for t in range(n_steps):
+        yhat, h, c = infdec.predict([target_seq]+state)
+        output.append(yhat[0, 0, :])
+        print(yhat[0, 0, :])
+        state = [h, c]
+        target_seq = np.argmax(yhat, axis=-1)
 
-df = pd.read_csv('../data/word_seperate/corpus', header=None) 
+    return np.asarray(output)
+
+df = pd.read_csv('../data/word_seperate/testcorpus', header=None) 
 X, y = df[0].values, df[1].values
 
 X1, X2, y, char_index, word_index = tokenize(X, y)
-
-train, infdec, infenc = model()
+X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1,X2, y, test_size=0.2, random_state=2018)
+print(X1_train[0, 0:1].shape)
+train, infenc, infdec = model()
 train.summary()
 
 train.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc'])
@@ -87,10 +102,10 @@ train.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc']
 batch_size = 256 
 epoches = 2000
 for epoch in range(epoches):
-    for batch in range(int(len(y)/batch_size)+1):
-        X1_batch = X1[batch_size*batch:batch_size*(batch+1), :]
-        X2_batch = X2[batch_size*batch:batch_size*(batch+1), :]
-        y_batch = y[batch_size*batch:batch_size*(batch+1), :]
+    for batch in range(int(len(y_train)/batch_size)+1):
+        X1_batch = X1_train[batch_size*batch:batch_size*(batch+1), :]
+        X2_batch = X2_train[batch_size*batch:batch_size*(batch+1), :]
+        y_batch = y_train[batch_size*batch:batch_size*(batch+1), :]
         
         y_batch = to_categorical(y_batch.flatten(), num_classes=WORD_VOCAB)
         y_batch = y_batch.reshape((-1, MAX_WORDS, WORD_VOCAB))
@@ -98,4 +113,6 @@ for epoch in range(epoches):
         xent, acc = train.train_on_batch([X1_batch, X2_batch], y_batch)
         if (batch % 20) == 0:
             print(epoch, batch, xent, acc)
-    
+            predicts = predict(infenc, infdec, X1_train[0], 50, 1)
+            predicts_idx = np.argmax(predicts, axis=-1)
+            print(predicts)
