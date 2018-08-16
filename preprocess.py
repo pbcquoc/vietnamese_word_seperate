@@ -1,7 +1,10 @@
 from multiprocessing import Pool
+import random
+from random import shuffle
 import re
 import string
 import sys
+random.seed(2018)
 
 translator=str.maketrans('','',string.punctuation)
 
@@ -24,6 +27,7 @@ if __name__ == '__main__':
 
     p = Pool(5)
     lines = p.map(processline, lines)
+    shuffle(lines)
 
     fout = open(fout, 'w')
     fout.write('\n'.join(lines))
