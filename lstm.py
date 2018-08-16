@@ -81,10 +81,13 @@ def predict(infenc, infdec, source, n_steps, card):
     output = []
     for t in range(n_steps):
         yhat, h, c = infdec.predict([target_seq]+state)
-        output.append(yhat[0, 0, :])
-        print(yhat[0, 0, :])
+        yhat = yhat[0,0, :]
+        output.append(yhat)
         state = [h, c]
-        target_seq = np.argmax(yhat, axis=-1)
+        print(yhat)
+        idxhat = np.argmax(yhat, axis=-1)
+        target_seq = np.zeros(shape=(card, MAX_WORDS))
+        target_seq[0, 0]=idxhat
 
     return np.asarray(output)
 
@@ -93,7 +96,7 @@ X, y = df[0].values, df[1].values
 
 X1, X2, y, char_index, word_index = tokenize(X, y)
 X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1,X2, y, test_size=0.2, random_state=2018)
-print(X1_train[0, 0:1].shape)
+
 train, infenc, infdec = model()
 train.summary()
 
@@ -113,6 +116,6 @@ for epoch in range(epoches):
         xent, acc = train.train_on_batch([X1_batch, X2_batch], y_batch)
         if (batch % 20) == 0:
             print(epoch, batch, xent, acc)
-            predicts = predict(infenc, infdec, X1_train[0], 50, 1)
+            predicts = predict(infenc, infdec, X1_train[0].reshape((1, 200)), 50, 1)
             predicts_idx = np.argmax(predicts, axis=-1)
-            print(predicts)
+            print(predicts_idx)
