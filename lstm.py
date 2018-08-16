@@ -73,6 +73,7 @@ def model():
     return model, encoder_model, decoder_model
 
 def index_str(indices, vocab, delimiter=''):
+    print(indices)
     strchar = delimiter.join([vocab[idx] for idx in indices if idx != 0 and (idx in vocab)])
     return strchar
 
@@ -91,7 +92,7 @@ def predict(infenc, infdec, source):
         state = [h, c]
         current_word = np.argmax(yhat, axis=-1)
 
-    return np.asarray(output).T
+    return np.asarray(output)
 
 df = pd.read_csv('../data/word_seperate/testcorpus', header=None) 
 X, y = df[0].values, df[1].values
@@ -117,8 +118,10 @@ for epoch in range(epoches):
         xent, acc = train.train_on_batch([X1_batch, X2_batch], y_batch)
         if (batch % 20) == 0:
             print(epoch, batch, xent, acc)
-            predicts = predict(infenc, infdec, X1_train)
+            predicts = predict(infenc, infdec, X1_train[0].reshape(1, 200))
+            print(predicts.shape)
             predicts_idx = np.argmax(predicts, axis=-1)
-            for i in range(2):
-                strpredict = index_str(X1_train[i], char_index,"") +"->"+index_str(predicts_idx[i], word_index, " ")
+            print(predicts_idx.shape)
+            for i in range(1):
+                strpredict = index_str(X1_train[i], char_index,"") +"->"+index_str(predicts_idx[0], word_index, " ")
                 print(strpredict)
