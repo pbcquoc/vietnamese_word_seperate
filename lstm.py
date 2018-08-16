@@ -6,6 +6,8 @@ from keras.models import Model
 from keras.layers import Input
 from keras.layers import LSTM
 from keras.layers import Dense, Embedding
+from keras.layers import TimeDistributed
+
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -29,7 +31,7 @@ def tokenize(X, y):
     y = word_tokenizer.texts_to_sequences(y)
     y = pad_sequences(y,  maxlen=MAX_WORDS, padding='post', truncating='post')
     
-    X2 = np.pad(y, ((0,0),(1,0)), mode='constant')[:,:-1]
+    X2 = np.pad(y, ((0,0),(1,0)), mode='constant', constant_values=WORD_VOCAB+2)[:,:-1]
     
     char_index = {v:k for k, v in char_tokenizer.word_index.items()}
     word_index = {v:k for k, v in word_tokenizer.word_index.items()}
@@ -39,7 +41,7 @@ def tokenize(X, y):
 def model():
     # embed encoder
     encoder_inputs = Input(shape=(MAX_CHARS,))
-    embed_encoder = Embedding(CHAR_VOCAB, EMBED_DIM)
+    embed_encoder = Embedding(CHAR_VOCAB, EMBED_DIM, mask_zero=False)
     embed_encoder_inputs = embed_encoder(encoder_inputs)
     
     encoder = LSTM(OUTPUT_DIM, return_state=True)
@@ -47,7 +49,7 @@ def model():
     encoder_states = [state_h, state_c]
     # define training decoder
     decoder_inputs = Input(shape=(MAX_WORDS, ))
-    embed_decoder = Embedding(WORD_VOCAB, EMBED_DIM)
+    embed_decoder = Embedding(WORD_VOCAB, EMBED_DIM, mask_zero=True)
     embed_decoder_inputs = embed_decoder(decoder_inputs)
     
     decoder_lstm = LSTM(OUTPUT_DIM, return_sequences=True, return_state=True)
@@ -71,25 +73,25 @@ def model():
     return model, encoder_model, decoder_model
 
 def index_str(indices, vocab, delimiter=''):
-    strchar = delimiter.join([vocab[idx] for idx in indices if idx != 0])
+    strchar = delimiter.join([vocab[idx] for idx in indices if idx != 0 and (idx in vocab)])
     return strchar
 
-def predict(infenc, infdec, source, n_steps, card):
+def predict(infenc, infdec, source):
     #encode
     state = infenc.predict(source)
-    target_seq = np.zeros(shape=(card, MAX_WORDS))
+    current_word = WORD_VOCAB + 2
     output = []
-    for t in range(n_steps):
+    for t in range(MAX_WORDS):
+        target_seq = np.zeros(shape=(len(source), MAX_WORDS))
+        target_seq[:, 0] = current_word
+        
         yhat, h, c = infdec.predict([target_seq]+state)
-        yhat = yhat[0,0, :]
+        yhat = yhat[:,0, :]
         output.append(yhat)
         state = [h, c]
-        print(yhat)
-        idxhat = np.argmax(yhat, axis=-1)
-        target_seq = np.zeros(shape=(card, MAX_WORDS))
-        target_seq[0, 0]=idxhat
+        current_word = np.argmax(yhat, axis=-1)
 
-    return np.asarray(output)
+    return np.asarray(output).T
 
 df = pd.read_csv('../data/word_seperate/testcorpus', header=None) 
 X, y = df[0].values, df[1].values
@@ -102,20 +104,21 @@ train.summary()
 
 train.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc'])
 
-batch_size = 256 
-epoches = 2000
+batch_size = 2 
+epoches = 1000
 for epoch in range(epoches):
-    for batch in range(int(len(y_train)/batch_size)+1):
+    for batch in range(int(len(y_train)/batch_size)):
         X1_batch = X1_train[batch_size*batch:batch_size*(batch+1), :]
         X2_batch = X2_train[batch_size*batch:batch_size*(batch+1), :]
         y_batch = y_train[batch_size*batch:batch_size*(batch+1), :]
-        
         y_batch = to_categorical(y_batch.flatten(), num_classes=WORD_VOCAB)
         y_batch = y_batch.reshape((-1, MAX_WORDS, WORD_VOCAB))
         
         xent, acc = train.train_on_batch([X1_batch, X2_batch], y_batch)
         if (batch % 20) == 0:
             print(epoch, batch, xent, acc)
-            predicts = predict(infenc, infdec, X1_train[0].reshape((1, 200)), 50, 1)
+            predicts = predict(infenc, infdec, X1_train)
             predicts_idx = np.argmax(predicts, axis=-1)
-            print(predicts_idx)
+            for i in range(2):
+                strpredict = index_str(X1_train[i], char_index,"") +"->"+index_str(predicts_idx[i], word_index, " ")
+                print(strpredict)
