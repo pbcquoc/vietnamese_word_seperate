@@ -29,8 +29,11 @@ def tokenize(X, y):
     y = pad_sequences(y,  maxlen=MAX_WORDS, padding='post', truncating='post')
     
     X2 = np.pad(y, ((0,0),(1,0)), mode='constant')[:,:-1]
+    
+    char_index = {v:k for k, v in char_tokenizer.word_index.items()}
+    word_index = {v:k for k, v in word_tokenizer.word_index.items()}
 
-    return X1, X2, y
+    return X1, X2, y, char_index, word_index
 
 def model():
     # embed encoder
@@ -66,10 +69,15 @@ def model():
     
     return model, encoder_model, decoder_model
 
-df = pd.read_csv('../data/word_seperate/corpus', header=None)   
+def index_str(indices, vocab, delimiter=''):
+    strchar = delimiter.join([vocab[idx] for idx in indices if idx != 0])
+    return strchar
+
+
+df = pd.read_csv('../data/word_seperate/corpus', header=None) 
 X, y = df[0].values, df[1].values
 
-X1, X2, y = tokenize(X, y)
+X1, X2, y, char_index, word_index = tokenize(X, y)
 
 train, infdec, infenc = model()
 train.summary()
