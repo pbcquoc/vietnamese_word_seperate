@@ -31,7 +31,7 @@ def tokenize(X, y):
     y = word_tokenizer.texts_to_sequences(y)
     y = pad_sequences(y,  maxlen=MAX_WORDS, padding='post', truncating='post')
     
-    X2 = np.pad(y, ((0,0),(1,0)), mode='constant', constant_values=WORD_VOCAB+2)[:,:-1]
+    X2 = np.pad(y, ((0,0),(1,0)), mode='constant', constant_values=WORD_VOCAB+1)[:,:-1]
     
     char_index = {v:k for k, v in char_tokenizer.word_index.items()}
     word_index = {v:k for k, v in word_tokenizer.word_index.items()}
@@ -41,7 +41,7 @@ def tokenize(X, y):
 def model():
     # embed encoder
     encoder_inputs = Input(shape=(MAX_CHARS,))
-    embed_encoder = Embedding(CHAR_VOCAB, EMBED_DIM, mask_zero=False)
+    embed_encoder = Embedding(CHAR_VOCAB+1, EMBED_DIM, mask_zero=False)
     embed_encoder_inputs = embed_encoder(encoder_inputs)
     
     encoder = LSTM(OUTPUT_DIM, return_state=True)
@@ -49,7 +49,7 @@ def model():
     encoder_states = [state_h, state_c]
     # define training decoder
     decoder_inputs = Input(shape=(MAX_WORDS, ))
-    embed_decoder = Embedding(WORD_VOCAB, EMBED_DIM, mask_zero=True)
+    embed_decoder = Embedding(WORD_VOCAB+2, EMBED_DIM, mask_zero=True)
     embed_decoder_inputs = embed_decoder(decoder_inputs)
     
     decoder_lstm = LSTM(OUTPUT_DIM, return_sequences=True, return_state=True)
@@ -73,14 +73,13 @@ def model():
     return model, encoder_model, decoder_model
 
 def index_str(indices, vocab, delimiter=''):
-    print(indices)
     strchar = delimiter.join([vocab[idx] for idx in indices if idx != 0 and (idx in vocab)])
     return strchar
 
 def predict(infenc, infdec, source):
     #encode
     state = infenc.predict(source)
-    current_word = WORD_VOCAB + 2
+    current_word = WORD_VOCAB + 1
     output = []
     for t in range(MAX_WORDS):
         target_seq = np.zeros(shape=(len(source), MAX_WORDS))
@@ -88,24 +87,26 @@ def predict(infenc, infdec, source):
         
         yhat, h, c = infdec.predict([target_seq]+state)
         yhat = yhat[:,0, :]
-        output.append(yhat)
         state = [h, c]
         current_word = np.argmax(yhat, axis=-1)
+        output.append(current_word)
 
-    return np.asarray(output)
+    return np.asarray(output).T
 
-df = pd.read_csv('../data/word_seperate/testcorpus', header=None) 
+df = pd.read_csv('../data/word_seperate/corpus', header=None) 
 X, y = df[0].values, df[1].values
 
 X1, X2, y, char_index, word_index = tokenize(X, y)
-X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1,X2, y, test_size=0.2, random_state=2018)
+X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1,X2, y, test_size=0.0005, random_state=2018)
+
+print(X1_train.shape, X1_test.shape)
 
 train, infenc, infdec = model()
 train.summary()
 
 train.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc'])
 
-batch_size = 2 
+batch_size = 256 
 epoches = 1000
 for epoch in range(epoches):
     for batch in range(int(len(y_train)/batch_size)):
@@ -118,10 +119,7 @@ for epoch in range(epoches):
         xent, acc = train.train_on_batch([X1_batch, X2_batch], y_batch)
         if (batch % 20) == 0:
             print(epoch, batch, xent, acc)
-            predicts = predict(infenc, infdec, X1_train[0].reshape(1, 200))
-            print(predicts.shape)
-            predicts_idx = np.argmax(predicts, axis=-1)
-            print(predicts_idx.shape)
-            for i in range(1):
-                strpredict = index_str(X1_train[i], char_index,"") +"->"+index_str(predicts_idx[0], word_index, " ")
+            predicts = predict(infenc, infdec, X1_test)
+            for i in range(10):
+                strpredict = index_str(X1_test[i], char_index,"") +"->"+index_str(predicts[i], word_index, " ")
                 print(strpredict)
