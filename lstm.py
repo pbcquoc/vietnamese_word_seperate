@@ -17,8 +17,8 @@ WORD_VOCAB = 5000
 
 MAX_CHARS = 200
 MAX_WORDS = 50
-EMBED_DIM = 32 
-OUTPUT_DIM = 64
+EMBED_DIM = 8 
+OUTPUT_DIM = 16
 
 def tokenize(X, y):
     char_tokenizer = Tokenizer(num_words=CHAR_VOCAB, char_level=True)
@@ -41,7 +41,7 @@ def tokenize(X, y):
 def model():
     # embed encoder
     encoder_inputs = Input(shape=(MAX_CHARS,))
-    embed_encoder = Embedding(CHAR_VOCAB+1, EMBED_DIM, mask_zero=False)
+    embed_encoder = Embedding(CHAR_VOCAB+1, EMBED_DIM, mask_zero=True)
     embed_encoder_inputs = embed_encoder(encoder_inputs)
     
     encoder = LSTM(OUTPUT_DIM, return_state=True)
@@ -93,11 +93,11 @@ def predict(infenc, infdec, source):
 
     return np.asarray(output).T
 
-df = pd.read_csv('../data/word_seperate/corpus', header=None) 
+df = pd.read_csv('../data/word_seperate/testcorpus', header=None) 
 X, y = df[0].values, df[1].values
 
 X1, X2, y, char_index, word_index = tokenize(X, y)
-X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1,X2, y, test_size=0.0005, random_state=2018)
+X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1,X2, y, test_size=0.2, random_state=2018)
 
 print(X1_train.shape, X1_test.shape)
 
@@ -106,13 +106,14 @@ train.summary()
 
 train.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc'])
 
-batch_size = 256 
+batch_size = 1 
 epoches = 1000
 for epoch in range(epoches):
     for batch in range(int(len(y_train)/batch_size)):
         X1_batch = X1_train[batch_size*batch:batch_size*(batch+1), :]
         X2_batch = X2_train[batch_size*batch:batch_size*(batch+1), :]
         y_batch = y_train[batch_size*batch:batch_size*(batch+1), :]
+        print(X1_batch, X2_batch, y_batch)
         y_batch = to_categorical(y_batch.flatten(), num_classes=WORD_VOCAB)
         y_batch = y_batch.reshape((-1, MAX_WORDS, WORD_VOCAB))
         
@@ -120,6 +121,6 @@ for epoch in range(epoches):
         if (batch % 20) == 0:
             print(epoch, batch, xent, acc)
             predicts = predict(infenc, infdec, X1_test)
-            for i in range(10):
+            for i in range(1):
                 strpredict = index_str(X1_test[i], char_index,"") +"->"+index_str(predicts[i], word_index, " ")
                 print(strpredict)
